@@ -612,8 +612,11 @@ const G={st:'title',lv:1,sc:0,mv:0,gl:10000,lives:5,mlv:5,combo:0,chainMax:0,
 
   // ===== LUCKY SPIN =====
   showSpin(){this.st='spin';this.ss('spin-screen');this.renderSpin()},
-  spinItems:[{label:'💥 x2',key:'bomb2'},{label:'⚡ x2',key:'line2'},{label:'🌀 x1',key:'cosmic1'},{label:'🪙 50',key:'coin50'},
-    {label:'🪙 100',key:'coin100'},{label:'🪙 200',key:'coin200'},{label:'❤️ x1',key:'life1'},{label:'🕳️ x1',key:'bh1'}],
+  spinItems:[
+    {emoji:'💥',text:'x2',key:'bomb2'},{emoji:'⚡',text:'x2',key:'line2'},
+    {emoji:'🌀',text:'x1',key:'cosmic1'},{emoji:'🪙',text:'50',key:'coin50'},
+    {emoji:'🪙',text:'100',key:'coin100'},{emoji:'🪙',text:'200',key:'coin200'},
+    {emoji:'❤️',text:'x1',key:'life1'},{emoji:'🕳️',text:'x1',key:'bh1'}],
   spinAngle:0,spinning:false,
   renderSpin(){const today=new Date().toDateString();const canSpin=this.lastSpinDate!==today;
     document.getElementById('spin-status').textContent=canSpin?'✨ FREE DAILY SPIN AVAILABLE!':'Come back tomorrow for another spin!';
@@ -621,44 +624,59 @@ const G={st:'title',lv:1,sc:0,mv:0,gl:10000,lives:5,mlv:5,combo:0,chainMax:0,
     btn.style.display=canSpin?'inline-block':'none';
     btn.disabled=false;
     document.getElementById('spin-result').textContent='';
-    // Draw high-res wheel on canvas
     const cv=document.getElementById('spinWheel');const ctx=cv.getContext('2d');
     const W=440,cx=W/2,cy=W/2,r=W/2-10;
     ctx.clearRect(0,0,W,W);
-    const items=this.spinItems;const seg=Math.PI*2/items.length;
+    const items=this.spinItems;const n=items.length;const seg=Math.PI*2/n;
     const colors=['#ff2255','#ff9900','#22dd66','#0099ff','#cc33ff','#ffcc00','#00cccc','#8844ff'];
-    // Draw segments
-    items.forEach((item,i)=>{
-      ctx.save();
-      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,seg*i-Math.PI/2,seg*(i+1)-Math.PI/2);ctx.closePath();
-      // Gradient fill
-      const midAngle=seg*i+seg/2-Math.PI/2;
-      const gx=cx+Math.cos(midAngle)*r*.5,gy=cy+Math.sin(midAngle)*r*.5;
-      const g=ctx.createRadialGradient(cx,cy,r*.1,cx,cy,r);
-      g.addColorStop(0,colors[i]+'55');g.addColorStop(.7,colors[i]+'33');g.addColorStop(1,colors[i]+'11');
+    // Draw segments with solid fills
+    for(let i=0;i<n;i++){
+      const a0=seg*i-Math.PI/2,a1=seg*(i+1)-Math.PI/2;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,a0,a1);ctx.closePath();
+      // Brighter gradient
+      const g=ctx.createRadialGradient(cx,cy,0,cx,cy,r);
+      g.addColorStop(0,colors[i]+'44');g.addColorStop(0.5,colors[i]+'66');g.addColorStop(1,colors[i]+'22');
       ctx.fillStyle=g;ctx.fill();
-      // Segment border
-      ctx.strokeStyle=colors[i]+'88';ctx.lineWidth=2;ctx.stroke();
-      ctx.restore();
-    });
-    // Draw labels
-    items.forEach((item,i)=>{
+      // Border
+      ctx.strokeStyle=colors[i]+'aa';ctx.lineWidth=2;ctx.stroke();
+    }
+    // Draw segment divider lines
+    ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=1;
+    for(let i=0;i<n;i++){
+      const a=seg*i-Math.PI/2;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);ctx.stroke();
+    }
+    // Draw emoji and text for each segment
+    for(let i=0;i<n;i++){
+      const midA=seg*i+seg/2-Math.PI/2;
+      const labelR=r*0.65; // distance from center for labels
+      const lx=cx+Math.cos(midA)*labelR;
+      const ly=cy+Math.sin(midA)*labelR;
+      // Emoji (large, no rotation)
       ctx.save();
-      ctx.translate(cx,cy);
-      ctx.rotate(seg*i+seg/2-Math.PI/2);
-      ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.font='bold 28px Rajdhani';ctx.fillStyle='#fff';
-      ctx.shadowColor=colors[i];ctx.shadowBlur=6;
-      ctx.fillText(item.label,0,-r*.62);
+      ctx.font='36px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(items[i].emoji,lx,ly-12);
       ctx.restore();
-    });
+      // Text label (bold, below emoji, no rotation)
+      ctx.save();
+      ctx.font='bold 26px Rajdhani,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillStyle='#fff';ctx.shadowColor=colors[i];ctx.shadowBlur=8;
+      ctx.fillText(items[i].text,lx,ly+18);
+      ctx.restore();
+    }
+    // Outer ring glow
+    ctx.strokeStyle='rgba(255,215,0,0.15)';ctx.lineWidth=6;
+    ctx.beginPath();ctx.arc(cx,cy,r+2,0,Math.PI*2);ctx.stroke();
     // Center circle
-    const cg=ctx.createRadialGradient(cx,cy,0,cx,cy,30);
-    cg.addColorStop(0,'#ffcc00');cg.addColorStop(.7,'#ff8800');cg.addColorStop(1,'#cc4400');
-    ctx.fillStyle=cg;ctx.beginPath();ctx.arc(cx,cy,25,0,Math.PI*2);ctx.fill();
-    ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,25,0,Math.PI*2);ctx.stroke();
-    ctx.font='bold 18px Rajdhani';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.fillText('SPIN',cx,cy);
-    // Reset rotation
+    const cg=ctx.createRadialGradient(cx,cy,0,cx,cy,32);
+    cg.addColorStop(0,'#ffdd44');cg.addColorStop(.6,'#ff9900');cg.addColorStop(1,'#cc4400');
+    ctx.fillStyle=cg;ctx.beginPath();ctx.arc(cx,cy,28,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.4)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,28,0,Math.PI*2);ctx.stroke();
+    // Center text
+    ctx.font='bold 20px Audiowide,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='#fff';ctx.shadowColor='#ff6600';ctx.shadowBlur=6;ctx.fillText('SPIN',cx,cy);
+    ctx.shadowBlur=0;
+    // Apply current rotation
     cv.style.transform=`rotate(${this.spinAngle}deg)`;
   },
   doSpin(){
@@ -667,24 +685,23 @@ const G={st:'title',lv:1,sc:0,mv:0,gl:10000,lives:5,mlv:5,combo:0,chainMax:0,
     document.getElementById('spin-btn').disabled=true;
     document.getElementById('spin-result').textContent='';
     
-    const items=this.spinItems;const idx=Math.floor(Math.random()*items.length);
-    const seg=360/items.length;
-    // Calculate target angle: land on the winning segment
-    // The pointer is at top (0°), segments start from top going clockwise
-    // We need the winning segment's center to align with the top
+    const items=this.spinItems;const n=items.length;const idx=Math.floor(Math.random()*n);
+    const seg=360/n;
+    // The pointer is at top (12 o'clock). Segments are drawn starting from top going clockwise.
+    // To land segment idx under the pointer, we need to rotate so that segment's center aligns with top.
+    // Segment i center is at angle: seg*i + seg/2 degrees from the starting position.
+    // We rotate CLOCKWISE by (360 - (seg*idx + seg/2)) to bring it to top.
     const targetSegCenter=seg*idx+seg/2;
-    const extraSpins=5+Math.floor(Math.random()*3); // 5-7 full rotations
-    const targetAngle=extraSpins*360+(360-targetSegCenter);
-    this.spinAngle+=targetAngle;
+    const landAngle=360-targetSegCenter;
+    const extraSpins=(5+Math.floor(Math.random()*3))*360;
+    this.spinAngle+=extraSpins+landAngle;
     
     const cv=document.getElementById('spinWheel');
     cv.style.transform=`rotate(${this.spinAngle}deg)`;
     
-    // Award after animation completes
     setTimeout(()=>{
       this.spinning=false;
       const item=items[idx];
-      // Award
       if(item.key==='bomb2')this.pups.bomb+=2;
       else if(item.key==='line2')this.pups.rowcol+=2;
       else if(item.key==='cosmic1')this.pups.cosmic++;
@@ -695,7 +712,7 @@ const G={st:'title',lv:1,sc:0,mv:0,gl:10000,lives:5,mlv:5,combo:0,chainMax:0,
       else if(item.key==='bh1')this.pups.blackhole++;
       this.save();
       SFX.play('coin');
-      document.getElementById('spin-result').textContent=`🎉 You won: ${item.label}!`;
+      document.getElementById('spin-result').textContent=`🎉 You won: ${item.emoji} ${item.text}!`;
       document.getElementById('spin-status').textContent='Come back tomorrow!';
       document.getElementById('spin-btn').style.display='none';
     },4200);
