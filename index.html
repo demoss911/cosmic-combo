@@ -756,11 +756,11 @@ const G={st:'title',lv:1,sc:0,mv:0,gl:10000,lives:5,mlv:5,combo:0,chainMax:0,
     [[w*.2,200,'rgba(60,0,120,0.1)',100],[w*.8,500,'rgba(0,40,120,0.08)',90],[w*.5,900,'rgba(80,0,100,0.07)',120]].forEach(([nx,ny,col,rad])=>{const sy=ny-scroll;if(Math.abs(sy)>h+200)return;const g=ctx.createRadialGradient(nx,sy,0,nx,sy,rad);g.addColorStop(0,col);g.addColorStop(1,'transparent');ctx.fillStyle=g;ctx.beginPath();ctx.arc(nx,sy,rad,0,Math.PI*2);ctx.fill()});
     // Stars
     for(let i=0;i<50;i++){const sx=(i*137.5)%w,sy=((i*97.3)%2000)-scroll;if(sy<-10||sy>h+10)continue;ctx.fillStyle=`rgba(200,220,255,${.3+.3*Math.sin(t*2+i)})`;ctx.beginPath();ctx.arc(sx,sy,.8,0,Math.PI*2);ctx.fill()}
-    if(positions.length<2)return;
-    // Path
-    ctx.strokeStyle='rgba(100,80,220,0.12)';ctx.lineWidth=22;ctx.lineCap='round';ctx.beginPath();for(let i=0;i<positions.length;i++){const p=positions[i];i===0?ctx.moveTo(p.x,p.y-scroll):ctx.lineTo(p.x,p.y-scroll)}ctx.stroke();
-    for(let i=1;i<positions.length;i++){const p0=positions[i-1],p1=positions[i];const lv=startLevel+i;const completed=lv<=this.hlv;ctx.strokeStyle=completed?'rgba(0,230,255,0.5)':'rgba(60,60,100,0.25)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(p0.x,p0.y-scroll);ctx.lineTo(p1.x,p1.y-scroll);ctx.stroke()}
-    // Nodes
+    // Path trail (only if 2+ nodes)
+    if(positions.length>=2){
+      ctx.strokeStyle='rgba(100,80,220,0.12)';ctx.lineWidth=22;ctx.lineCap='round';ctx.beginPath();for(let i=0;i<positions.length;i++){const p=positions[i];i===0?ctx.moveTo(p.x,p.y-scroll):ctx.lineTo(p.x,p.y-scroll)}ctx.stroke();
+      for(let i=1;i<positions.length;i++){const p0=positions[i-1],p1=positions[i];const lv=startLevel+i;const completed=lv<=this.hlv;ctx.strokeStyle=completed?'rgba(0,230,255,0.5)':'rgba(60,60,100,0.25)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(p0.x,p0.y-scroll);ctx.lineTo(p1.x,p1.y-scroll);ctx.stroke()}}
+    // Nodes (works with 1+ nodes)
     for(let i=0;i<positions.length;i++){const p=positions[i];const lv=startLevel+i;const sy=p.y-scroll;if(sy<-30||sy>h+30)continue;
       const cfg=genLevel(lv);const isDone=lv<this.hlv;const isCur=lv===this.hlv;const isBoss=cfg.isBoss;const stars=this.stars[lv]||0;
       const radius=isBoss?17:14;ctx.save();
