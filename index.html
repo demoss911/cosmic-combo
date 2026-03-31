@@ -77,6 +77,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
 .om{color:var(--txt2);font-size:.75rem;margin-bottom:.8rem;line-height:1.4}
 .obt{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap}
 .obt .btn{font-size:.7rem;padding:.45rem 1rem}
+.btn-share{background:linear-gradient(135deg,#00cc88,#00aadd);color:#fff;box-shadow:0 0 15px rgba(0,200,150,0.3)}
+.btn-share:active{transform:scale(.95)}
+.share-card{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:.5rem;margin:.4rem 0;font-size:.65rem;line-height:1.5;text-align:left;white-space:pre-line;font-family:'Rajdhani',sans-serif;color:var(--txt)}
+.share-copied{font-size:.55rem;color:var(--green);margin-top:.2rem;min-height:.8rem}
 /* Shop */
 .shop-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:.8rem 0;width:min(90vw,340px)}
 .shop-item{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:.4rem .3rem;text-align:center;cursor:pointer;transition:all .15s}
@@ -175,7 +179,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
       <button class="btn bs" onclick="G.showStats()">📊 STATS</button>
       <button class="btn bs" onclick="G.showThemes()">🎨</button>
     </div>
-    <button class="btn bs" id="music-btn" onclick="SFX.toggleMusic()" style="font-size:.6rem;padding:.3rem 1rem">🎵 MUSIC: ON</button>
+    <div class="trow">
+      <button class="btn btn-share" onclick="G.shareInvite()" style="font-size:.65rem;padding:.35rem 1rem">📤 INVITE FRIENDS</button>
+      <button class="btn bs" id="music-btn" onclick="SFX.toggleMusic()" style="font-size:.6rem;padding:.35rem .8rem">🎵 ON</button>
+    </div>
   </div>
   <div class="tstats" id="tst"></div>
 </div>
@@ -230,7 +237,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   <div class="ach-grid" id="ach-grid"></div>
   <div class="lhdr" style="margin-top:.5rem;font-size:1rem">🌈 STREAK</div>
   <div class="streak-bar" id="streak-bar"></div>
-  <button class="btn bs" onclick="G.showTitle()" style="margin-top:.4rem">DONE</button>
+  <div class="obt" style="margin-top:.5rem">
+    <button class="btn btn-share" onclick="G.shareStats()" style="font-size:.65rem;padding:.4rem 1.2rem">📤 SHARE MY STATS</button>
+    <button class="btn bs" onclick="G.showTitle()">DONE</button>
+  </div>
 </div>
 
 <!-- THEMES -->
@@ -271,7 +281,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-famil
   <div class="os" id="wsc"></div>
   <div class="win-coins" id="win-coins"></div>
   <div class="om" id="wmsg"></div>
-  <div class="obt"><button class="btn bs" onclick="G.back()">LEVELS</button><button class="btn bp" onclick="G.next()">NEXT →</button></div>
+  <div class="share-card" id="share-card" style="display:none"></div>
+  <div class="share-copied" id="share-copied"></div>
+  <div class="obt">
+    <button class="btn bs" onclick="G.back()">LEVELS</button>
+    <button class="btn btn-share" onclick="G.shareWin()">📤 SHARE</button>
+    <button class="btn bp" onclick="G.next()">NEXT →</button>
+  </div>
 </div></div>
 
 <!-- LOSE -->
@@ -386,7 +402,7 @@ const SFX={ctx:null,musicOn:true,musicNodes:null,masterGain:null,musicGain:null,
   stopMusic(){if(!this.musicNodes)return;const n=this.musicNodes;
     try{n.d1.stop();n.d2.stop();n.n.stop();n.nl.stop();n.pads.forEach(p=>{p.o.stop();p.lfo.stop()});clearInterval(n.arpI);}catch(e){}
     this.musicNodes=null;},
-  toggleMusic(){this.musicOn=!this.musicOn;document.getElementById('music-btn').textContent=`🎵 MUSIC: ${this.musicOn?'ON':'OFF'}`;
+  toggleMusic(){this.musicOn=!this.musicOn;document.getElementById('music-btn').textContent=`🎵 ${this.musicOn?'ON':'OFF'}`;
     if(this.musicOn)this.startMusic();else this.stopMusic();},
   play(type){if(!this.ctx)return;this.resume();const c=this.ctx,now=c.currentTime,dest=this.sfxGain;
     if(type==='explode'){const nb=c.createBuffer(1,c.sampleRate*1.5,c.sampleRate);const nd=nb.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=(Math.random()*2-1)*Math.exp(-i/(c.sampleRate*.25));
@@ -912,6 +928,110 @@ const G={st:'title',lv:1,sc:0,mv:0,gl:10000,lives:5,mlv:5,combo:0,chainMax:0,
   scp(combo,pts,isChain){const t=['','','GREAT!','AMAZING!','STELLAR!','COSMIC!','SUPERNOVA!','LEGENDARY!'];const c=['','','#39ff80','#00e5ff','#ff3ec9','#ffcc00','#ff3355','#fff'];
     let text=`${t[Math.min(combo,t.length-1)]||'LEGENDARY!'} x${combo}\n+${pts}`;if(isChain)text+='\n🔗 CHAIN!';this.sct(text,c[Math.min(combo,c.length-1)]||'#fff')},
   sct(text,color){const p=document.createElement('div');p.className='cp';p.style.color=color;p.style.left='50%';p.style.top='35%';p.style.transform='translateX(-50%)';p.textContent=text;document.getElementById('gc').appendChild(p);setTimeout(()=>p.remove(),1000)},
+
+  // ===== SHARE SYSTEM =====
+  generateShareCard(){
+    const stars=this.stars[this.lv]||0;
+    const starStr='⭐'.repeat(stars)+'☆'.repeat(3-stars);
+    const isBoss=this.cfg?.isBoss;
+    const chain=this.chainMax>=3?`🔗 Chain: ${this.chainMax}x\n`:'';
+    const bossTag=isBoss?'👹 BOSS DEFEATED!\n':'';
+    // Generate a mini board art from score
+    const sc=this.sc;
+    const rank=sc>100000?'🏆 LEGENDARY':sc>50000?'💎 DIAMOND':sc>25000?'🔥 BLAZING':sc>10000?'⭐ STELLAR':'✨ NICE';
+    
+    const card=
+`🌌 COSMIC COMBO 🌌
+━━━━━━━━━━━━━━━
+${bossTag}Level ${this.lv} ${starStr}
+Score: ${sc.toLocaleString()} ${rank}
+${chain}Moves left: ${this.mv}/${this.cfg?.moves||30}
+━━━━━━━━━━━━━━━
+🪐☀️🌙⭐💫🌍
+
+Can you beat my score?
+▶ Play: https://demoss911.github.io/cosmic-combo/`;
+    return card;
+  },
+
+  generateStatsCard(){
+    const s=this.stats;
+    const card=
+`🌌 COSMIC COMBO — MY JOURNEY 🌌
+━━━━━━━━━━━━━━━━━━━
+🚀 Level: ${this.hlv}
+🏆 Best Score: ${s.bestScore.toLocaleString()}
+⚡ Best Chain: ${s.bestChain}x
+👹 Boss Wins: ${s.bossWins}
+🎯 Total Matches: ${s.totalMatches.toLocaleString()}
+🔥 Login Streak: ${this.streak.current} days
+💎 Diamonds: ${s.diamondsMatched}
+━━━━━━━━━━━━━━━━━━━
+Think you can do better?
+▶ Play: https://demoss911.github.io/cosmic-combo/`;
+    return card;
+  },
+
+  async shareWin(){
+    const text=this.generateShareCard();
+    // Show preview
+    document.getElementById('share-card').style.display='block';
+    document.getElementById('share-card').textContent=text;
+    document.getElementById('share-copied').textContent='';
+    
+    // Try Web Share API (mobile native share sheet)
+    if(navigator.share){
+      try{
+        await navigator.share({title:'Cosmic Combo — I crushed it! 🌌',text:text});
+        document.getElementById('share-copied').textContent='✅ Shared!';
+      }catch(e){
+        // User cancelled — fall back to clipboard
+        this.copyToClipboard(text);
+      }
+    }else{
+      this.copyToClipboard(text);
+    }
+  },
+
+  async shareInvite(){
+    const text=
+`🌌 COSMIC COMBO 🌌
+Match-3 puzzle game with 10,000 levels!
+
+💥 Powerups & combos
+👹 Boss battles
+🕳️ Black holes
+⚡ Lightning effects
+🎰 Daily rewards
+
+▶ Play FREE: https://demoss911.github.io/cosmic-combo/`;
+
+    if(navigator.share){
+      try{await navigator.share({title:'Play Cosmic Combo! 🌌',text:text,url:'https://demoss911.github.io/cosmic-combo/'});
+      }catch(e){this.copyToClipboard(text)}
+    }else{this.copyToClipboard(text)}
+  },
+
+  async shareStats(){
+    const text=this.generateStatsCard();
+    if(navigator.share){
+      try{await navigator.share({title:'My Cosmic Combo Stats 🌌',text:text});
+      }catch(e){this.copyToClipboard(text)}
+    }else{this.copyToClipboard(text)}
+  },
+
+  async copyToClipboard(text){
+    try{await navigator.clipboard.writeText(text);
+      document.getElementById('share-copied').textContent='✅ Copied to clipboard!';
+      this.sct('📋 Copied!','#39ff80');
+    }catch(e){
+      // Final fallback — select textarea
+      const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0';
+      document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+      document.getElementById('share-copied').textContent='✅ Copied to clipboard!';
+      this.sct('📋 Copied!','#39ff80');
+    }
+  },
   w(ms){return new Promise(r=>setTimeout(r,ms))},
 
   loop(){const now=performance.now(),dt=Math.min((now-(this.lft||now))/1000,.05);this.lft=now;
